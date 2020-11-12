@@ -18,6 +18,8 @@ package store
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"regexp"
 	"sort"
 	"strconv"
@@ -34,6 +36,7 @@ var (
 	invalidLabelCharRE = regexp.MustCompile(`[^a-zA-Z0-9_]`)
 	matchAllCap        = regexp.MustCompile("([a-z0-9])([A-Z])")
 	conditionStatuses  = []v1.ConditionStatus{v1.ConditionTrue, v1.ConditionFalse, v1.ConditionUnknown}
+	knownConditionReasons = map[schema.GroupVersionKind]map[v1.ConditionStatus]map[string]bool{}
 )
 
 func resourceVersionMetric(rv string) []*metric.Metric {
@@ -58,15 +61,40 @@ func boolFloat64(b bool) float64 {
 }
 
 // addConditionMetrics generates one metric for each possible condition
-// status. For this function to work properly, the last label in the metric
+// status and known reason for that object type. this has to grow dynamically as the values of `reason`,
+// while bounded by the values that the implementation can set, are not exported and known before-hand.
+//
+// TODO: confirm statement - For this function to work properly, the last label in the metric
 // description must be the condition.
-func addConditionMetrics(cs v1.ConditionStatus) []*metric.Metric {
-	ms := make([]*metric.Metric, len(conditionStatuses))
+func addConditionMetrics(gvk schema.GroupVersionKind, cs v1.ConditionStatus, reason string) []*metric.Metric {
+	// create map if not initialized
+	if _, ok := knownConditionReasons[gvk]; !ok {
+		knownConditionReasons[gvk] = map[v1.ConditionStatus]map[string]bool{}
+	}
 
-	for i, status := range conditionStatuses {
-		ms[i] = &metric.Metric{
-			LabelValues: []string{strings.ToLower(string(status))},
-			Value:       boolFloat64(cs == status),
+	knownReasonCount := 0
+	for _, status := range conditionStatuses {
+		// create map if not initialized
+		if _, ok := knownConditionReasons[gvk][status]; !ok {
+			knownConditionReasons[gvk][status] = map[string]bool{}
+		}
+
+		// add current reason to list of known reasons
+		knownConditionReasons[gvk][status][reason] = true
+
+		knownReasonCount += len(knownConditionReasons[gvk][status])
+	}
+
+	ms := make([]*metric.Metric, knownReasonCount)
+	i := 0
+	for _, status := range conditionStatuses {
+		for knownReason, _ := range knownConditionReasons[gvk][status] {
+			ms[i] = &metric.Metric{
+				LabelKeys:   []string{"status", "reason"},
+				LabelValues: []string{strings.ToLower(string(status)), strings.ToLower(knownReason)},
+				Value:       boolFloat64(cs == status && reason == knownReason),
+			}
+			i++
 		}
 	}
 

@@ -366,11 +366,12 @@ var (
 				for _, c := range p.Status.Conditions {
 					switch c.Type {
 					case v1.PodReady:
-						conditionMetrics := addConditionMetrics(c.Status)
+						conditionMetrics := addConditionMetrics(p.GroupVersionKind(), c.Status, c.Reason)
 
 						for _, m := range conditionMetrics {
 							metric := m
-							metric.LabelKeys = []string{"condition"}
+							metric.LabelKeys = append([]string{"condition"}, metric.LabelKeys...)
+							metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
 							ms = append(ms, metric)
 						}
 					}
@@ -392,11 +393,12 @@ var (
 				for _, c := range p.Status.Conditions {
 					switch c.Type {
 					case v1.PodScheduled:
-						conditionMetrics := addConditionMetrics(c.Status)
+						conditionMetrics := addConditionMetrics(p.GroupVersionKind(), c.Status, c.Reason)
 
 						for _, m := range conditionMetrics {
 							metric := m
-							metric.LabelKeys = []string{"condition"}
+							metric.LabelKeys = append([]string{"condition"}, metric.LabelKeys...)
+							metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
 							ms = append(ms, metric)
 						}
 					}

@@ -18,7 +18,6 @@ package store
 
 import (
 	"context"
-
 	"k8s.io/kube-state-metrics/v2/pkg/metric"
 	generator "k8s.io/kube-state-metrics/v2/pkg/metric_generator"
 
@@ -140,12 +139,12 @@ var (
 				ms := make([]*metric.Metric, len(d.Status.Conditions)*len(conditionStatuses))
 
 				for i, c := range d.Status.Conditions {
-					conditionMetrics := addConditionMetrics(c.Status)
+					conditionMetrics := addConditionMetrics(d.GroupVersionKind(), c.Status, c.Reason)
 
 					for j, m := range conditionMetrics {
 						metric := m
 
-						metric.LabelKeys = []string{"condition", "status"}
+						metric.LabelKeys = append([]string{"condition"}, metric.LabelKeys...)
 						metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
 						ms[i*len(conditionStatuses)+j] = metric
 					}

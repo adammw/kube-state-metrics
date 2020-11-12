@@ -161,12 +161,12 @@ var (
 				ms := make([]*metric.Metric, len(p.Status.Conditions)*len(conditionStatuses))
 
 				for i, c := range p.Status.Conditions {
-					conditionMetrics := addConditionMetrics(c.Status)
+					conditionMetrics := addConditionMetrics(p.GroupVersionKind(), c.Status, c.Reason)
 
 					for j, m := range conditionMetrics {
 						metric := m
 
-						metric.LabelKeys = []string{"condition", "status"}
+						metric.LabelKeys = append([]string{"condition"}, metric.LabelKeys...)
 						metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
 
 						ms[i*len(conditionStatuses)+j] = metric

@@ -106,12 +106,12 @@ var (
 			wrapNamespaceFunc(func(n *v1.Namespace) *metric.Family {
 				ms := make([]*metric.Metric, len(n.Status.Conditions)*len(conditionStatuses))
 				for i, c := range n.Status.Conditions {
-					conditionMetrics := addConditionMetrics(c.Status)
+					conditionMetrics := addConditionMetrics(n.GroupVersionKind(), c.Status, c.Reason)
 
 					for j, m := range conditionMetrics {
 						metric := m
 
-						metric.LabelKeys = []string{"condition", "status"}
+						metric.LabelKeys = append([]string{"condition"}, metric.LabelKeys...)
 						metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
 
 						ms[i*len(conditionStatuses)+j] = metric

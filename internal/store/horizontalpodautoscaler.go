@@ -217,11 +217,11 @@ var (
 				ms := make([]*metric.Metric, 0, len(a.Status.Conditions)*len(conditionStatuses))
 
 				for _, c := range a.Status.Conditions {
-					metrics := addConditionMetrics(c.Status)
+					metrics := addConditionMetrics(a.GroupVersionKind(), c.Status, c.Reason)
 
 					for _, m := range metrics {
 						metric := m
-						metric.LabelKeys = []string{"condition", "status"}
+						metric.LabelKeys = append([]string{"condition"}, metric.LabelKeys...)
 						metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
 						ms = append(ms, metric)
 					}

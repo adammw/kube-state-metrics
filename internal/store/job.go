@@ -233,10 +233,11 @@ var (
 				ms := []*metric.Metric{}
 				for _, c := range j.Status.Conditions {
 					if c.Type == v1batch.JobComplete {
-						metrics := addConditionMetrics(c.Status)
+						metrics := addConditionMetrics(j.GroupVersionKind(), c.Status, c.Reason)
 						for _, m := range metrics {
 							metric := m
-							metric.LabelKeys = []string{"condition"}
+							metric.LabelKeys = append([]string{"condition"}, metric.LabelKeys...)
+							metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
 							ms = append(ms, metric)
 						}
 					}
@@ -257,10 +258,11 @@ var (
 
 				for _, c := range j.Status.Conditions {
 					if c.Type == v1batch.JobFailed {
-						metrics := addConditionMetrics(c.Status)
+						metrics := addConditionMetrics(j.GroupVersionKind(), c.Status, c.Reason)
 						for _, m := range metrics {
 							metric := m
-							metric.LabelKeys = []string{"condition"}
+							metric.LabelKeys = append([]string{"condition"}, metric.LabelKeys...)
+							metric.LabelValues = append([]string{string(c.Type)}, metric.LabelValues...)
 							ms = append(ms, metric)
 						}
 					}
